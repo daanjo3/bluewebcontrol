@@ -24,7 +24,7 @@ Start the Express server
 node app.js
 ```
 
-##Features as of now
+## Features as of now
 
 ### GET /info
 Returns the latest information on the target bluetooth device
