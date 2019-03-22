@@ -13,7 +13,7 @@ npm install
 Create a config.json file that contains a target element and a port
 ```json
 {
-    "target": "<bluetooth mac address>"
+    "target": "<bluetooth mac address>",
     "port": "3000"
 }
 ```
