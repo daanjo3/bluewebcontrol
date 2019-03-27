@@ -13,7 +13,7 @@ npm install
 Create a config.json file that contains a target element and a port
 ```json
 {
-    "target": "<bluetooth mac address>"
+    "target": "<bluetooth mac address>",
     "port": "3000"
 }
 ```
@@ -24,7 +24,7 @@ Start the Express server
 node app.js
 ```
 
-##Features as of now
+## Features as of now
 
 ### GET /info
 Returns the latest information on the target bluetooth device
