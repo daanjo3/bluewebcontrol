@@ -1,92 +1,86 @@
 const express = require('express');
-var blue = require('bluetoothctl');
 
-const blueconfig = require('./config.json');
-
+const { BlueWebControl } = require('./bt');
+const bwc = new BlueWebControl();
 // Start the express server
 const app = express();
-const port = blueconfig.port;
 
-// Initialise the bluetoothctl wrapper
-blue.Bluetooth();
-
-const bluetarget = blueconfig.target;
-
-// Bluetooth target device data
-var boomdata = null;
+const config = require('./config.json');
+// Add configuration input validation. For now assuming config is correct
+const target = config.target;
+const port = config.port;
 
 /* Retrieve all information on discovered devices */
-app.get('/', (req, res) => {
-    console.log('GET /');
-    var btc = blue.devices;
-    res.send(btc);
-});
+app.get('/', (req, res) => { bwc.list(res) });
 
 /* Retrieve information on the status of the target device */
-app.get('/info', async (req, res) => {
-    boomdata = null;
-    blue.info(bluetarget);
-    boomdata = await ensureBoomdata();
-    res.send(boomdata);
-});
-
-/* Set whether the controller is scanning for devices */
-app.get('/scan/:setScan', (req, res) => {
-    console.log(req.params.setScan);
-    if (req.params.setScan == 'true' || req.params.setScan == 'false') {
-        var setScan = req.params.setScan == 'true' ? true : false;
-        console.log(`bluetooth scanning set to ${setScan}`);
-        blue.scan(setScan);
-        res.send(`bluetooth scanning set to ${setScan}`);
+app.get('/info', (req, res) => { bwc.info(target, res); });
+app.get('/info/:mac', (req, res) => {
+    var mac = req.params.mac;
+    if (verifyTarget(mac)) {
+        bwc.info(mac, res);
     } else {
-        res.send('invalid parameter provided');
+        console.warn('Received invalid target');
+        res.send(null);
     }
-});
+})
 
 /* Connects to the bluetooth target. This function automatically turns off scanning
  * as this could interfere with the connection. Responds with updated info.
 */
-
-// TODO: wait for bluetooth to actually disconnect before displaying boomdata update
-app.get('/connect', async (req, res) => {
-    blue.connect(bluetarget);
-    blue.scan(false);
-    boomdata = null;
-    blue.info(bluetarget);
-    boomdata = await ensureBoomdata();
-    res.send(boomdata);
+app.get('/connect', (req, res) => { bwc.connect(target, res) });
+app.get('/connect/:mac', (req, res) => {
+    var mac = req.params.mac;
+    if (verifyTarget(mac)) {
+        bwc.connect(mac, res);
+    } else {
+        console.warn('Received invalid target');
+        res.send(null);
+    }
 });
 
 /* Disconnect the controller from the target bluetooth device. Responds with updated info. */
+app.get('/disconnect', (req, res) => { bwc.disconnect(target, res) });
+app.get('/disconnect/:mac', (req, res) => {
+    var mac = req.params.mac;
+    if (verifyTarget(mac)) {
+        bwc.disconnect(mac, res);
+    } else {
+        console.warn('Received invalid target');
+        res.send(null);
+    }
+})
 
-// TODO: wait for bluetooth to actually disconnect before displaying boomdata update
-app.get('/disconnect', async (req, res) => {
-    blue.disconnect(bluetarget);
-    boomdata = null;
-    blue.info(bluetarget);
-    boomdata = await ensureBoomdata();
-    res.send(boomdata);
-});
-
-/* Ensures that new data is retrieved before returning. */
-
-// TODO: add functionality to wait for specific parameters to be set to specific values
-function ensureBoomdata() {
-    return new Promise(function (resolve, reject) {
-        (function waitForBoomdata() {
-            if (boomdata) {
-                return resolve(boomdata);
-            }
-            setTimeout(waitForBoomdata, 30);
-        })();
-    });
-}
-
-/* Event listener that updates that bluetooth device information */
-blue.on(blue.bluetoothEvents.Device, function (devices) {
-    var obj = devices.filter(function(el) { return el.mac == bluetarget });
-    boomdata = obj.length > 0 ? obj[0] : null;
-    console.log('boomdata updated');
+/* Set whether the controller is scanning for devices */
+app.get('/scan', (req, res) => { bwc.scanning(null, res); })
+app.get('/scan/:setScan', (req, res) => {
+    var scanning = verifyBool(req.params.setScan);
+    if (scanning) {
+        bwc.scanning(scanning, res);
+    } else {
+        console.warn('Received invalid parameter');
+        res.send(null);
+    }
 });
 
 app.listen(port, () => console.log(`Bluewebcontrol is listening on ${port}!`))
+
+// --------------- Input validation --------------------------- //
+
+// Verifies a boolean and returns it, or null otherwise
+function verifyBool(bool) {
+    if (bool == null) { return null; }
+    if (bool == 'true' || bool == 'false') {
+        return bool == 'true' ? true : false;
+    }
+    return null;
+}
+
+// Verifies whether the provided target is a valid MAC address
+function verifyTarget(target) {
+    const re = new RegExp('^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$');
+    if (!target) {
+        return false;
+    }
+    return re.test(target);
+}
