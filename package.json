@@ -8,10 +8,7 @@
   },
   "author": "daanjo3",
   "license": "MIT",
-  "repository": {
-    "type" : "git",
-    "url" : "https://github.com/daanjo3/bluewebcontrol/"
-  },
+  "repository": "github:daanjo3/bluewebcontrol",
   "dependencies": {
     "bluetoothctl": "^1.1.0",
     "express": "^4.16.4"
