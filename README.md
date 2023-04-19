@@ -2,6 +2,9 @@
 This tools hosts a web API that is used to control bluetooth devices.
 It requires bluetoothctl to be installed and used.
 
+## Unfinished notice
+Since bluetooth on linux devices is often janky and this tool is really simple it never fully worked unfortunately. I am not planning on finishing up the tool as there are probably other working tools already that fulfill a similar purpose.
+
 ## Usage
 Install NPM dependencies (express & bluetoothctl)
 
